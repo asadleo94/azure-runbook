@@ -1,0 +1,24 @@
+# Parameters
+Param(
+ [string]$ResourceGroupName
+)
+ 
+# Login to Automation Account
+$Conn = Get-AutomationConnection -Name AzureRunAsConnection
+Add-AzAccount -ServicePrincipal -Tenant $Conn.TenantID `
+-ApplicationID $Conn.ApplicationID -CertificateThumbprint $Conn.CertificateThumbprint | Out-Null
+
+$VmName = Get-AzVM -ResourceGroupName $ResourceGroupName | Select-Object Name
+
+# Stop Virtual Machines
+$vms = $VmName.Name.split(',')
+foreach($vm in $vms) {
+    Stop-AzVM -Name $Vm -ResourceGroupName $ResourceGroupName -Force | Out-Null
+    #Write-Output "VM $Vm in Resource Group $ResourceGroupName was stopped Successfully"
+    $objOut = [PSCustomObject]@{
+    ResourceGroupName = $ResourceGroupName
+    VMName = $Vm
+    VMAction = "Shutdown"
+    }
+    Write-Output ( $objOut | ConvertTo-Json)
+}
